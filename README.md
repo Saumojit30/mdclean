@@ -15,7 +15,7 @@ It is designed to work on any repository containing Markdown documentation. The 
 # Features
 
 * Recursively scans Markdown (`.md`, `.mdx`, and custom extensions) files.
-* Removes AI citation markers like ``, ``, ``.
+* Removes AI citation markers like `[web:123]`, `[cite:45]`, `[ref:67]`.
 * Preserves Markdown formatting — **fenced code blocks are skipped**.
 * Preserves original line endings (CRLF / LF).
 * Cleans up double spaces left behind after citation removal.
@@ -55,7 +55,7 @@ mdclean/
 Clone the project and install it in editable mode.
 
 ```bash
-git clone https://github.com/<your-username>/mdclean.git
+git clone https://github.com/Saumojit30/mdclean.git
 
 cd mdclean
 
