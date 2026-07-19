@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mdclean"
+version = "0.2.0"
+description = "Remove AI citation markers from Markdown files"
+requires-python = ">=3.9"
+
+[project.scripts]
+mdclean = "mdclean.cli:main"
