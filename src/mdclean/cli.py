@@ -1,4 +1,5 @@
 import argparse
+import difflib
 import os
 import re
 import shutil
@@ -95,6 +96,8 @@ def process_file(path: str, citation_re: re.Pattern, dry_run: bool, backup: bool
 
     info = {
         'file': path,
+        'original': original,
+        'updated': updated,
         'removed': len(original) - len(updated),
         'citations': citations,
     }
@@ -127,6 +130,16 @@ def undo_backups(root: str) -> int:
     return restored
 
 
+def make_diff(filepath: str, original: str, updated: str) -> str:
+    lines = difflib.unified_diff(
+        original.splitlines(keepends=True),
+        updated.splitlines(keepends=True),
+        fromfile=filepath,
+        tofile=filepath,
+    )
+    return ''.join(lines).rstrip()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description='Remove AI citation markers from Markdown files'
@@ -136,8 +149,8 @@ def main() -> None:
         help='Directory to scan (default: current directory)'
     )
     parser.add_argument(
-        '--dry-run', action='store_true',
-        help='Show what would change without modifying files'
+        '--dry-run', nargs='?', const='diff', choices=['diff', 'summary'],
+        help='Preview changes: "diff" shows unified diff (default), "summary" lists citations'
     )
     parser.add_argument(
         '--backup', action='store_true',
@@ -205,23 +218,30 @@ def main() -> None:
         print('No matching files found.')
         return
 
+    is_dry_run = args.dry_run is not None
     citation_re = re.compile(args.pattern)
     total_removed = 0
     total_citations = 0
     modified = 0
 
     for path in files:
-        info = process_file(path, citation_re, args.dry_run, args.backup, not args.no_space_clean)
+        info = process_file(path, citation_re, is_dry_run, args.backup, not args.no_space_clean)
         if info:
             modified += 1
             total_removed += info['removed']
             total_citations += len(info['citations'])
-            mode = '[DRY RUN]' if args.dry_run else '[MODIFIED]'
+            mode = '[DRY RUN]' if is_dry_run else '[MODIFIED]'
             print(f'{mode} {info["file"]}  (-{info["removed"]} bytes)')
-            for c in info['citations']:
-                print(f'    - {c}')
+            if is_dry_run and args.dry_run == 'diff':
+                print(make_diff(info['file'], info['original'], info['updated']))
+            elif is_dry_run and args.dry_run == 'summary':
+                for c in info['citations']:
+                    print(f'    - {c}')
+            else:
+                for c in info['citations']:
+                    print(f'    - {c}')
 
-    what = 'Would modify' if args.dry_run else 'Modified'
+    what = 'Would modify' if is_dry_run else 'Modified'
     print(f'\n{what} {modified} file(s), {total_citations} citation(s), {total_removed} byte(s).')
 
 
