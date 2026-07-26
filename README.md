@@ -19,7 +19,7 @@ It is designed to work on any repository containing Markdown documentation. The 
 * Preserves Markdown formatting — **fenced code blocks are skipped**.
 * Preserves original line endings (CRLF / LF).
 * Cleans up double spaces left behind after citation removal.
-* Supports preview mode (`--dry-run`) with detailed citation listing.
+* Supports preview mode (`--dry-run`) with citation listing or unified diff (`--show diff`).
 * Optional backup creation (`--backup`) using safe copy (original untouched).
 * Include/exclude directory filters (`--include` / `--exclude` globs).
 * Git-only mode (`--git-only`) for processing tracked files only.
@@ -140,21 +140,27 @@ mdclean ~/Projects/MyRepository
 
 ## Preview Changes
 
-To see what would change without modifying files:
+To preview what would change without modifying files:
 
 ```bash
 mdclean --dry-run
 ```
 
-Citations are listed per file:
+By default, citations are listed per file:
 
 ```
 [DRY RUN] .\README.md  (-85 bytes)
     - [web:319]
     - [web:306]
+
+Would clean 1 file(s), 2 citation(s), 85 byte(s).
 ```
 
----
+To see a unified diff instead:
+
+```bash
+mdclean --dry-run --show diff
+```
 
 ## Create Backups
 
@@ -234,14 +240,15 @@ Leaves any double spaces that result from citation removal as-is.
 | Flag | Default | Description |
 |---|---|---|
 | `path` | `.` | Directory to scan |
-| `--dry-run` | off | Preview changes |
+| `--dry-run` | off | Preview changes without modifying files |
+| `--show` | `summary` | Dry-run display: `summary` (list citations) or `diff` (unified diff) |
 | `--backup` | off | Create `.bak` copies |
 | `--ext` | `.md` | Comma-separated extensions |
 | `--include` | — | Glob pattern to include |
 | `--exclude` | — | Glob pattern to exclude |
 | `--git-only` | off | Git-tracked files only |
 | `--undo` | off | Restore from `.bak` files |
-| `--pattern` | `\[\w+:\d+\]` | Custom citation regex |
+| `--pattern` | `\[\w+:\d+\]|\[\^\d+\]` | Custom citation regex |
 | `--no-space-clean` | off | Keep double spaces |
 | `--version` | off | Show version |
 | `--help` | — | Show help |
@@ -300,10 +307,16 @@ Clean a specific repository:
 mdclean ~/Projects/MyRepo
 ```
 
-Preview changes:
+Preview changes (list citations):
 
 ```bash
 mdclean --dry-run
+```
+
+Preview changes (show unified diff):
+
+```bash
+mdclean --dry-run --show diff
 ```
 
 Create backups:

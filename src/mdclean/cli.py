@@ -8,7 +8,7 @@ from pathlib import Path
 
 __version__ = "0.2.0"
 
-DEFAULT_PATTERN = r'\[\w+:\d+\]'
+DEFAULT_PATTERN = r'\[\w+:\d+\]|\[\^\d+\]'
 
 
 def find_files(root: str, extensions: list[str], include: str | None, exclude: str | None) -> list[str]:
@@ -52,7 +52,6 @@ def detect_line_ending(text: str) -> str:
 
 def clean_content(text: str, citation_re: re.Pattern, clean_spaces: bool) -> tuple[str, list[str]]:
     le = detect_line_ending(text)
-    has_trailing_newline = text.endswith(le)
     lines = text.split(le)
     citation_list = []
     in_fence = False
@@ -77,8 +76,6 @@ def clean_content(text: str, citation_re: re.Pattern, clean_spaces: bool) -> tup
         new_lines.append(cleaned)
 
     result = le.join(new_lines)
-    if has_trailing_newline:
-        result += le
     return result, citation_list
 
 
@@ -149,8 +146,12 @@ def main() -> None:
         help='Directory to scan (default: current directory)'
     )
     parser.add_argument(
-        '--dry-run', nargs='?', const='diff', choices=['diff', 'summary'],
-        help='Preview changes: "diff" shows unified diff (default), "summary" lists citations'
+        '--dry-run', action='store_true',
+        help='Preview changes without modifying files'
+    )
+    parser.add_argument(
+        '--show', choices=['diff', 'summary'], default='summary',
+        help='Display mode for dry-run: "diff" shows unified diff, "summary" lists citations (default)'
     )
     parser.add_argument(
         '--backup', action='store_true',
@@ -218,7 +219,7 @@ def main() -> None:
         print('No matching files found.')
         return
 
-    is_dry_run = args.dry_run is not None
+    is_dry_run = args.dry_run
     citation_re = re.compile(args.pattern)
     total_removed = 0
     total_citations = 0
@@ -232,16 +233,15 @@ def main() -> None:
             total_citations += len(info['citations'])
             mode = '[DRY RUN]' if is_dry_run else '[MODIFIED]'
             print(f'{mode} {info["file"]}  (-{info["removed"]} bytes)')
-            if is_dry_run and args.dry_run == 'diff':
+            if is_dry_run and args.show == 'diff':
                 print(make_diff(info['file'], info['original'], info['updated']))
-            elif is_dry_run and args.dry_run == 'summary':
+            elif is_dry_run and args.show == 'summary':
                 for c in info['citations']:
                     print(f'    - {c}')
-            else:
-                for c in info['citations']:
-                    print(f'    - {c}')
+            elif not is_dry_run:
+                print(f'    removed {len(info["citations"])} citation(s)')
 
-    what = 'Would modify' if is_dry_run else 'Modified'
+    what = 'Would clean' if is_dry_run else 'Cleaned'
     print(f'\n{what} {modified} file(s), {total_citations} citation(s), {total_removed} byte(s).')
 
 
